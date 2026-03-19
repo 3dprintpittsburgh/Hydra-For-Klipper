@@ -89,6 +89,23 @@ else
     warn "hydra_variables.cfg already exists - skipping (preserving your config)"
 fi
 
+# Install KlipperScreen panels (if KlipperScreen is installed)
+KLIPPERSCREEN_DIR="${HOME}/KlipperScreen"
+if [ -d "${KLIPPERSCREEN_DIR}/panels" ]; then
+    info "Installing KlipperScreen panels..."
+    for panel in hydra_dashboard hydra_align hydra_visual_cal; do
+        ln -sf "${HYDRA_DIR}/klipperscreen_panels/${panel}.py" \
+               "${KLIPPERSCREEN_DIR}/panels/${panel}.py"
+        info "  Symlinked ${panel}.py"
+    done
+    warn ""
+    warn "Add Hydra menu entries to KlipperScreen.conf"
+    warn "See: ${HYDRA_DIR}/examples/KlipperScreen.conf.example"
+    warn ""
+else
+    warn "KlipperScreen not found at ${KLIPPERSCREEN_DIR} - skipping panel install"
+fi
+
 # Check for existing T0/T1 macros
 if grep -q '\[gcode_macro T0\]' "${CONFIG_DIR}/printer.cfg" 2>/dev/null || \
    grep -q '\[gcode_macro T1\]' "${CONFIG_DIR}/printer.cfg" 2>/dev/null; then

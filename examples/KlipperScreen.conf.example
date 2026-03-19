@@ -1,0 +1,24 @@
+# Hydra for Klipper - KlipperScreen Configuration
+# Add these sections to your KlipperScreen.conf ABOVE the auto-generated line
+
+# Hydra Z calibrate in Z Calibrate dropdown
+[printer Printer]
+zcalibrate_custom_commands: CALIBRATE_IDEX_Z_OFFSET
+
+# Hydra Dashboard - top-level menu item
+[menu __main hydra]
+name: Hydra IDEX
+icon: extruder
+panel: hydra_dashboard
+
+# Hydra sub-items under More
+[menu __main more hydra_align]
+name: XY Alignment
+icon: move
+panel: hydra_align
+
+[menu __main more hydra_z_save]
+name: Save Z Offset
+icon: complete
+method: printer.gcode.script
+params: {"script":"SAVE_IDEX_Z_OFFSET"}
