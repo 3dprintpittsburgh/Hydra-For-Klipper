@@ -1,0 +1,20 @@
+# Hydra for Klipper - Moonraker Configuration
+# Add this section to your moonraker.conf
+
+[hydra_idex]
+# Enable/disable the preprocessor
+enabled: True
+
+# Automatically preprocess gcode files on upload
+auto_preprocess: True
+
+# Keep a .orig backup of files before preprocessing
+backup_original: False
+
+
+# Update manager integration (for automatic updates via Fluidd/Mainsail)
+[update_manager hydra]
+type: git_repo
+path: ~/hydra-klipper
+origin: https://github.com/thoughtspacedesigns/hydra-klipper.git
+managed_services: moonraker klipper
