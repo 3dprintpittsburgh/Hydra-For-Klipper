@@ -16,5 +16,5 @@ backup_original: False
 [update_manager hydra]
 type: git_repo
 path: ~/hydra-klipper
-origin: https://github.com/thoughtspacedesigns/hydra-klipper.git
+origin: https://github.com/3dprintpittsburgh/Hydra-For-Klipper.git
 managed_services: moonraker klipper

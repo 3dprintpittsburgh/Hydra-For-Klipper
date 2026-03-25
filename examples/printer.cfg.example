@@ -60,8 +60,8 @@ pwm: true
 # [gcode_macro _HYDRA_USER_START_PRINT]
 # gcode:
 #     SET_PRINTING_LEDS
-#     # notify-jareth "Print starting!"
+#     # # your notification command
 #
 # [gcode_macro _HYDRA_USER_END_PRINT]
 # gcode:
-#     # notify-jareth "Print complete!"
+#     # # your notification command

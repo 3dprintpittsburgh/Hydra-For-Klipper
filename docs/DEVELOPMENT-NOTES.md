@@ -224,6 +224,6 @@ START_PRINT BED_TEMP=[first_layer_bed_temperature] EXTRUDER_TEMP=[first_layer_te
 ---
 
 ## Repository
-- Local: `/root/projects/opensource/hydra-klipper/`
-- Future GitHub: `https://github.com/thoughtspacedesigns/hydra-klipper`
-- Related printer notes: `/root/projects/personal/printfarm-manager/notes/printers/enderidexxl1.md`
+- Local: `./`
+- Future GitHub: `https://github.com/3dprintpittsburgh/Hydra-For-Klipper`
+- Related printer notes: `N/A (printer-specific)`

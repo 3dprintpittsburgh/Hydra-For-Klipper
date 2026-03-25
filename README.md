@@ -76,7 +76,7 @@ The Klipper macros move the incoming nozzle **directly to where it's needed**, p
 
 ```bash
 cd ~
-git clone https://github.com/thoughtspacedesigns/hydra-klipper.git
+git clone https://github.com/3dprintpittsburgh/Hydra-For-Klipper.git
 cd hydra-klipper
 ./scripts/install.sh
 ```
