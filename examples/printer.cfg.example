@@ -1,16 +1,67 @@
-# Hydra for Klipper - Printer Configuration
-# Add this include to your printer.cfg
+# Hydra for Klipper - Example printer.cfg additions
+#
+# Add these to your existing printer.cfg. Hydra handles toolchange,
+# fan routing, print lifecycle, and calibration. Your printer.cfg
+# still needs: steppers, MCU, bed, probe, display, etc.
 
+# =============================================================================
+# Include Hydra (add near top of printer.cfg)
+# =============================================================================
 [include hydra.cfg]
 
-# NOTE: Remove or comment out any existing [gcode_macro T0] and [gcode_macro T1]
-# definitions in your config. Hydra provides its own T0/T1 macros.
+# =============================================================================
+# Required: save_variables (for offset persistence)
+# =============================================================================
+[save_variables]
+filename: ~/printer_data/config/hydra_saved_variables.cfg
 
-# Your START_PRINT should call HYDRA_INIT after homing:
+# =============================================================================
+# IMPORTANT: Remove these from your config (Hydra replaces them)
+# =============================================================================
+# - [gcode_macro T0] and [gcode_macro T1]
+# - [gcode_macro M106] and [gcode_macro M107]
+# - [gcode_macro START_PRINT] and [gcode_macro END_PRINT]
+#   (unless you want your own - just don't include hydra_print.cfg)
+# - [gcode_macro PAUSE], [gcode_macro RESUME], [gcode_macro CANCEL_PRINT]
+# - Any existing PARK_TOOLHEAD / RESTORE_TOOLHEAD macros
+
+# =============================================================================
+# Part cooling fans (Hydra routes M106/M107 to these by name)
+# Set the names to match fan_pin_t0 / fan_pin_t1 in hydra_variables.cfg
+# =============================================================================
+[output_pin extruder_fan]
+pin: PA8              # Your T0 part cooling fan pin
+pwm: true
+
+[output_pin extruder1_fan]
+pin: PE5              # Your T1 part cooling fan pin
+pwm: true
+
+# =============================================================================
+# LED effects (optional - Hydra calls these by name during toolchange)
+# Set led_toolchange_effect and led_printing_macro in hydra_variables.cfg
+# Or set them to "" to disable
+# =============================================================================
+# [led_effect toolchange_wait]
+# autostart: false
+# frame_rate: 24
+# leds:
+#     neopixel:main_leds
+# layers:
+#     gradient .5 1 top (1,1,0),(1,0,1)
 #
-# [gcode_macro START_PRINT]
+# [gcode_macro SET_PRINTING_LEDS]
 # gcode:
-#     G28
-#     BED_MESH_CALIBRATE
-#     ...
-#     HYDRA_INIT TOOL={params.INITIAL_TOOL|default(0)}
+#     SET_LED LED=main_leds GREEN=1 RED=1 BLUE=1
+
+# =============================================================================
+# User override hooks (optional - define for custom start/end behavior)
+# =============================================================================
+# [gcode_macro _HYDRA_USER_START_PRINT]
+# gcode:
+#     SET_PRINTING_LEDS
+#     # notify-jareth "Print starting!"
+#
+# [gcode_macro _HYDRA_USER_END_PRINT]
+# gcode:
+#     # notify-jareth "Print complete!"
