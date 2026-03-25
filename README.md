@@ -1,6 +1,12 @@
-# Hydra for Klipper
+<p align="center">
+  <img src="assets/hydra-logo.svg" alt="Hydra for Klipper" width="480">
+</p>
 
-> Intelligent IDEX toolchange management with gcode lookahead preprocessing
+<p align="center">
+  <em>Intelligent IDEX toolchange management with gcode lookahead preprocessing</em>
+</p>
+
+---
 
 ## The Problem
 

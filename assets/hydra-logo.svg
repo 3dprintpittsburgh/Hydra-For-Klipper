@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 200" width="480" height="200">
+  <defs>
+    <linearGradient id="leftGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="rightGrad" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6D28D9"/>
+      <stop offset="100%" stop-color="#4C1D95"/>
+    </linearGradient>
+    <linearGradient id="neckBlend" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#5B21B6"/>
+    </linearGradient>
+    <linearGradient id="filamentL" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="filamentR" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ============================================ -->
+  <!-- ICON GROUP - centered at x=105              -->
+  <!-- ============================================ -->
+  <g id="icon">
+
+    <!-- Linear rail (subtle IDEX reference) -->
+    <line x1="32" y1="18" x2="178" y2="18" stroke="#9CA3AF" stroke-width="2.5" stroke-linecap="round" opacity="0.25"/>
+    <!-- Left carriage block -->
+    <rect x="42" y="12" width="16" height="12" rx="2.5" fill="#7C3AED" opacity="0.35"/>
+    <!-- Right carriage block -->
+    <rect x="152" y="12" width="16" height="12" rx="2.5" fill="#06B6D4" opacity="0.35"/>
+
+    <!-- LEFT NECK - curves from body up-left -->
+    <path d="M 105,110 C 100,95 80,65 62,45 C 52,33 44,28 42,24"
+          fill="none" stroke="url(#leftGrad)" stroke-width="18" stroke-linecap="round"/>
+
+    <!-- RIGHT NECK - curves from body up-right -->
+    <path d="M 105,110 C 110,95 130,65 148,45 C 158,33 166,28 168,24"
+          fill="none" stroke="url(#rightGrad)" stroke-width="18" stroke-linecap="round"/>
+
+    <!-- LEFT HEAD - stylized angular serpent facing left -->
+    <g transform="translate(50, 24)">
+      <!-- Main head shape -->
+      <path d="M 0,0 C -2,-6 -6,-12 -12,-14 L -30,-8 C -34,-6 -36,-2 -34,2 L -32,6 C -30,10 -24,11 -20,8 L -8,4 Z"
+            fill="url(#leftGrad)"/>
+      <!-- Nozzle tip -->
+      <path d="M -30,-8 L -38,-5 L -36,0 L -30,-2" fill="#4C1D95"/>
+      <!-- Eye -->
+      <circle cx="-18" cy="-2" r="2.2" fill="#E9D5FF"/>
+      <!-- Filament drip -->
+      <line x1="-37" y1="-1" x2="-37" y2="14" stroke="url(#filamentL)" stroke-width="2" stroke-linecap="round"/>
+    </g>
+
+    <!-- RIGHT HEAD - stylized angular serpent facing right (mirrored) -->
+    <g transform="translate(160, 24)">
+      <!-- Main head shape -->
+      <path d="M 0,0 C 2,-6 6,-12 12,-14 L 30,-8 C 34,-6 36,-2 34,2 L 32,6 C 30,10 24,11 20,8 L 8,4 Z"
+            fill="url(#rightGrad)"/>
+      <!-- Nozzle tip -->
+      <path d="M 30,-8 L 38,-5 L 36,0 L 30,-2" fill="#164E63"/>
+      <!-- Eye -->
+      <circle cx="18" cy="-2" r="2.2" fill="#CFFAFE"/>
+      <!-- Filament drip -->
+      <line x1="37" y1="-1" x2="37" y2="14" stroke="url(#filamentR)" stroke-width="2" stroke-linecap="round"/>
+    </g>
+
+    <!-- BODY - where the necks merge -->
+    <ellipse cx="105" cy="118" rx="22" ry="16" fill="url(#bodyGrad)"/>
+
+    <!-- Scale texture on body -->
+    <path d="M 97,110 Q 105,106 113,110" fill="none" stroke="#7C3AED" stroke-width="1.2" opacity="0.5"/>
+    <path d="M 94,116 Q 105,112 116,116" fill="none" stroke="#7C3AED" stroke-width="1.2" opacity="0.5"/>
+    <path d="M 97,122 Q 105,118 113,122" fill="none" stroke="#7C3AED" stroke-width="1.2" opacity="0.5"/>
+
+    <!-- Tail -->
+    <path d="M 105,134 C 103,144 108,152 104,160 C 101,166 106,170 108,166"
+          fill="none" stroke="#4C1D95" stroke-width="6" stroke-linecap="round" opacity="0.6"/>
+
+    <!-- Small crown/horn details on heads for character -->
+    <!-- Left horn -->
+    <path d="M 40,12 L 36,2 L 42,8" fill="#8B5CF6" opacity="0.7"/>
+    <!-- Right horn -->
+    <path d="M 170,12 L 174,2 L 168,8" fill="#22D3EE" opacity="0.7"/>
+
+  </g>
+
+  <!-- ============================================ -->
+  <!-- TEXT GROUP                                    -->
+  <!-- ============================================ -->
+  <g id="text-group">
+    <!-- HYDRA text -->
+    <text x="232" y="106"
+          font-family="'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+          font-weight="800"
+          font-size="52"
+          letter-spacing="4"
+          fill="#7C3AED">HYDRA</text>
+
+    <!-- FOR KLIPPER subtitle -->
+    <text x="236" y="126"
+          font-family="'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+          font-weight="500"
+          font-size="13"
+          letter-spacing="5"
+          fill="#9CA3AF">FOR KLIPPER</text>
+
+    <!-- Subtle tagline -->
+    <text x="236" y="144"
+          font-family="'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+          font-weight="400"
+          font-size="9"
+          letter-spacing="2"
+          fill="#6B7280"
+          opacity="0.7">IDEX TOOLCHANGE MANAGEMENT</text>
+  </g>
+
+</svg>
