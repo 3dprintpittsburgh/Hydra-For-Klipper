@@ -1,4 +1,6 @@
 import logging
+import os
+import re
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -6,6 +8,7 @@ from gi.repository import Gtk
 from ks_includes.screen_panel import ScreenPanel
 
 HYDRA_CONFIG = "gcode_macro _HYDRA_CONFIG"
+HYDRA_VARIABLES_FILE = "hydra_variables.cfg"
 
 
 class Panel(ScreenPanel):
@@ -15,6 +18,7 @@ class Panel(ScreenPanel):
 
         self.labels = {}
         self.settings = {}
+        self.dirty = False  # Track unsaved changes
 
         # Subscribe for live updates
         self._screen._ws.klippy.object_subscription({
@@ -62,18 +66,23 @@ class Panel(ScreenPanel):
 
         row = self._add_separator(grid, row)
 
-        # Status label
-        self.labels['status'] = Gtk.Label(label="Changes apply immediately. Edit hydra_variables.cfg to persist.")
+        # Save button + status
+        btn_row = Gtk.Box(spacing=5)
+        save_btn = self._gtk.Button("complete", "Save to Config", "color3", self.bts)
+        save_btn.connect("clicked", self._on_save)
+        self.labels['status'] = Gtk.Label(label="")
         self.labels['status'].set_line_wrap(True)
-        grid.attach(self.labels['status'], 0, row, 4, 1)
+        self.labels['status'].set_hexpand(True)
+        btn_row.pack_start(save_btn, False, False, 0)
+        btn_row.pack_start(self.labels['status'], True, True, 5)
+        grid.attach(btn_row, 0, row, 4, 1)
 
         scroll.add(grid)
         self.content.add(scroll)
 
     def _load_settings(self):
-        """Load settings from config section (always available) then overlay runtime stat if present."""
+        """Load settings from config section, overlay runtime stat."""
         try:
-            # Always start from config section defaults (reliable)
             cfg = self._printer.get_config_section(HYDRA_CONFIG)
             if cfg:
                 for k, v in cfg.items():
@@ -87,7 +96,6 @@ class Panel(ScreenPanel):
                         except (ValueError, AttributeError):
                             self.settings[name] = v
 
-            # Overlay with runtime values if available (may have been changed via SET_GCODE_VARIABLE)
             stat = self._printer.get_stat(HYDRA_CONFIG)
             if stat:
                 for k, v in stat.items():
@@ -99,6 +107,8 @@ class Panel(ScreenPanel):
     def activate(self):
         self._load_settings()
         self._update_all_labels()
+        self.dirty = False
+        self.labels['status'].set_label("")
 
     def _add_toggle(self, grid, row, key, label_text):
         label = Gtk.Label(label=label_text, halign=Gtk.Align.START, hexpand=True)
@@ -146,7 +156,8 @@ class Panel(ScreenPanel):
             f"SET_GCODE_VARIABLE MACRO=_HYDRA_CONFIG VARIABLE={key} VALUE={klipper_val}"
         )
         self.settings[key] = val
-        self.labels['status'].set_label(f"{key} = {val} (runtime)")
+        self.dirty = True
+        self.labels['status'].set_label("Unsaved changes")
 
     def _on_adjust(self, widget, key, step, min_val, max_val, fmt, scale):
         val = self.settings.get(key, 0)
@@ -160,7 +171,61 @@ class Panel(ScreenPanel):
 
         display = self._format_value(val, fmt, scale)
         self.labels[key].set_label(display)
-        self.labels['status'].set_label(f"{key} = {val} (runtime)")
+        self.dirty = True
+        self.labels['status'].set_label("Unsaved changes")
+
+    def _on_save(self, widget):
+        """Write current settings to hydra_variables.cfg on disk."""
+        try:
+            config_dir = os.path.expanduser("~/printer_data/config")
+            filepath = os.path.join(config_dir, HYDRA_VARIABLES_FILE)
+
+            if not os.path.isfile(filepath):
+                self.labels['status'].set_label(f"Error: {HYDRA_VARIABLES_FILE} not found")
+                return
+
+            with open(filepath, 'r') as f:
+                lines = f.readlines()
+
+            # Update variable lines with current settings
+            new_lines = []
+            for line in lines:
+                match = re.match(r'^(variable_(\w+))\s*:', line)
+                if match:
+                    var_name = match.group(2)
+                    if var_name in self.settings:
+                        val = self.settings[var_name]
+                        # Preserve the comment if present
+                        comment = ""
+                        if "#" in line:
+                            comment = "  " + line[line.index("#"):].strip()
+
+                        if isinstance(val, bool):
+                            val_str = "True" if val else "False"
+                        elif isinstance(val, float):
+                            # Clean float display
+                            if val == int(val):
+                                val_str = str(int(val))
+                            else:
+                                val_str = str(val)
+                        else:
+                            val_str = str(val)
+
+                        new_lines.append(f"variable_{var_name}: {val_str}{comment}\n")
+                        continue
+
+                new_lines.append(line)
+
+            with open(filepath, 'w') as f:
+                f.writelines(new_lines)
+
+            self.dirty = False
+            self.labels['status'].set_label("Saved to config")
+            logging.info(f"Hydra Settings: Saved to {filepath}")
+
+        except Exception as e:
+            self.labels['status'].set_label(f"Save error: {e}")
+            logging.error(f"Hydra Settings: Save error: {e}")
 
     def _update_all_labels(self):
         for key, widget in self.labels.items():
