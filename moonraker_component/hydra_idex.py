@@ -37,6 +37,9 @@ TEMP_PATTERN = re.compile(
     r'^M(?:104|109)\s+.*?S(\d+\.?\d*).*?T([01])',
     re.IGNORECASE
 )
+START_PRINT_PATTERN = re.compile(
+    r'^START_PRINT\b', re.IGNORECASE
+)
 
 logger = logging.getLogger(__name__)
 
@@ -250,6 +253,9 @@ class HydraIdex:
         tools_used = set()
         lookahead_count = 0
 
+        total_tc = len(toolchanges)
+        start_print_injected = False
+
         for i, line in enumerate(lines):
             if i in tc_map:
                 _, tool_num, next_x, next_y = tc_map[i]
@@ -269,6 +275,17 @@ class HydraIdex:
                         f"IDEX_TOOL_CHANGE T={tool_num} "
                         f"; {line.strip()}\n"
                     )
+            elif (not start_print_injected
+                  and START_PRINT_PATTERN.match(line.strip())):
+                # Inject TOTAL_TOOLCHANGES into START_PRINT if missing
+                stripped = line.rstrip('\n')
+                if 'TOTAL_TOOLCHANGES' not in stripped.upper():
+                    output.append(
+                        f"{stripped} TOTAL_TOOLCHANGES={total_tc}\n"
+                    )
+                else:
+                    output.append(line)
+                start_print_injected = True
             else:
                 output.append(line)
 
