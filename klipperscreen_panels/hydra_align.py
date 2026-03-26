@@ -253,7 +253,8 @@ class Panel(ScreenPanel):
             self._screen._ws.klippy.gcode_script(
                 f"CALIBRATE_IDEX_XY_ALIGNMENT BED_TEMP={bed} NOZZLE_TEMP={t0} NOZZLE_TEMP_T1={t1}"
             )
-            self.labels['status'].set_label(f"Printing ({t0}/{t1}°C, bed {bed}°C)...")
+            # Navigate to progress screen
+            self.menu_item_clicked(None, {"panel": "hydra_cal_progress"})
 
     def draw_alignment(self, da, ctx):
         width = da.get_allocated_width()

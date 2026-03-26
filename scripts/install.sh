@@ -94,7 +94,7 @@ fi
 KLIPPERSCREEN_DIR="${HOME}/KlipperScreen"
 if [ -d "${KLIPPERSCREEN_DIR}/panels" ]; then
     info "Installing KlipperScreen panels..."
-    for panel in hydra_dashboard hydra_align hydra_visual_cal hydra_settings; do
+    for panel in hydra_dashboard hydra_align hydra_visual_cal hydra_settings hydra_cal_progress; do
         ln -sf "${HYDRA_DIR}/klipperscreen_panels/${panel}.py" \
                "${KLIPPERSCREEN_DIR}/panels/${panel}.py"
         info "  Symlinked ${panel}.py"
