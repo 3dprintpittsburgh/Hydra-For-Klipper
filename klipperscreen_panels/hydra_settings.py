@@ -16,6 +16,11 @@ class Panel(ScreenPanel):
         self.labels = {}
         self.settings = {}
 
+        # Subscribe for live updates
+        self._screen._ws.klippy.object_subscription({
+            "objects": {HYDRA_CONFIG: None}
+        })
+
         self._load_settings()
 
         # Scrollable content for small screens
@@ -29,55 +34,65 @@ class Panel(ScreenPanel):
 
         row = 0
 
-        # === Toggle: Wipe Enabled ===
+        # Toggle: Wipe Enabled
         row = self._add_toggle(grid, row, "wipe_enabled", "Nozzle Wipe")
 
         row = self._add_separator(grid, row)
 
-        # === Numeric: Retract/Prime ===
+        # Numeric: Retract/Prime
         row = self._add_numeric(grid, row, "retract_distance", "Retract (mm)", 1, 0, 50)
         row = self._add_numeric(grid, row, "prime_distance", "Prime (mm)", 1, 0, 50)
 
         row = self._add_separator(grid, row)
 
-        # === Numeric: Z Hop ===
+        # Numeric: Z Hop
         row = self._add_numeric(grid, row, "z_hop", "Z Hop (mm)", 0.5, 0.5, 20)
 
         row = self._add_separator(grid, row)
 
-        # === Numeric: Temperature ===
-        row = self._add_numeric(grid, row, "standby_temp_factor", "Standby Temp %", 0.05, 0.5, 1.0, fmt="%.0f%%", scale=100)
+        # Numeric: Temperature
+        row = self._add_numeric(grid, row, "standby_temp_factor", "Standby Temp %",
+                                0.05, 0.5, 1.0, fmt="%.0f%%", scale=100)
 
         row = self._add_separator(grid, row)
 
-        # === Numeric: Wipe ===
+        # Numeric: Wipe
         row = self._add_numeric(grid, row, "wipe_purge_length", "Purge Length (mm)", 5, 0, 100)
         row = self._add_numeric(grid, row, "wipe_cool_time", "Cool Time (s)", 1, 0, 30)
+
+        row = self._add_separator(grid, row)
+
+        # Status label
+        self.labels['status'] = Gtk.Label(label="Changes apply immediately. Edit hydra_variables.cfg to persist.")
+        self.labels['status'].set_line_wrap(True)
+        grid.attach(self.labels['status'], 0, row, 4, 1)
 
         scroll.add(grid)
         self.content.add(scroll)
 
     def _load_settings(self):
+        """Load settings from config section (always available) then overlay runtime stat if present."""
         try:
-            self._screen._ws.klippy.object_subscription({
-                "objects": {HYDRA_CONFIG: None}
-            })
+            # Always start from config section defaults (reliable)
+            cfg = self._printer.get_config_section(HYDRA_CONFIG)
+            if cfg:
+                for k, v in cfg.items():
+                    if k.startswith("variable_"):
+                        name = k[9:]
+                        try:
+                            if v.lower() in ("true", "false"):
+                                self.settings[name] = v.lower() == "true"
+                            else:
+                                self.settings[name] = float(v)
+                        except (ValueError, AttributeError):
+                            self.settings[name] = v
+
+            # Overlay with runtime values if available (may have been changed via SET_GCODE_VARIABLE)
             stat = self._printer.get_stat(HYDRA_CONFIG)
             if stat:
-                self.settings = dict(stat)
-            else:
-                cfg = self._printer.get_config_section(HYDRA_CONFIG)
-                if cfg:
-                    for k, v in cfg.items():
-                        if k.startswith("variable_"):
-                            name = k[9:]
-                            try:
-                                if v.lower() in ("true", "false"):
-                                    self.settings[name] = v.lower() == "true"
-                                else:
-                                    self.settings[name] = float(v)
-                            except (ValueError, AttributeError):
-                                self.settings[name] = v
+                for k, v in stat.items():
+                    self.settings[k] = v
+
         except Exception as e:
             logging.warning(f"Hydra Settings: Could not load: {e}")
 
@@ -98,10 +113,7 @@ class Panel(ScreenPanel):
     def _add_numeric(self, grid, row, key, label_text, step, min_val, max_val, fmt=None, scale=1):
         label = Gtk.Label(label=label_text, halign=Gtk.Align.START)
         val = self.settings.get(key, 0)
-        if fmt and scale != 1:
-            display = fmt % (val * scale)
-        else:
-            display = f"{val}"
+        display = self._format_value(val, fmt, scale)
 
         minus = self._gtk.Button("arrow-down", None, "color1", self.bts)
         minus.connect("clicked", self._on_adjust, key, -step, min_val, max_val, fmt, scale)
@@ -122,6 +134,11 @@ class Panel(ScreenPanel):
         grid.attach(Gtk.Separator(hexpand=True), 0, row, 4, 1)
         return row + 1
 
+    def _format_value(self, val, fmt=None, scale=1):
+        if fmt and scale != 1:
+            return fmt % (val * scale)
+        return f"{val}"
+
     def _on_toggle(self, switch, gparam, key):
         val = switch.get_active()
         klipper_val = "True" if val else "False"
@@ -129,6 +146,7 @@ class Panel(ScreenPanel):
             f"SET_GCODE_VARIABLE MACRO=_HYDRA_CONFIG VARIABLE={key} VALUE={klipper_val}"
         )
         self.settings[key] = val
+        self.labels['status'].set_label(f"{key} = {val} (runtime)")
 
     def _on_adjust(self, widget, key, step, min_val, max_val, fmt, scale):
         val = self.settings.get(key, 0)
@@ -140,16 +158,16 @@ class Panel(ScreenPanel):
             f"SET_GCODE_VARIABLE MACRO=_HYDRA_CONFIG VARIABLE={key} VALUE={val}"
         )
 
-        if fmt and scale != 1:
-            display = fmt % (val * scale)
-        else:
-            display = f"{val}"
+        display = self._format_value(val, fmt, scale)
         self.labels[key].set_label(display)
+        self.labels['status'].set_label(f"{key} = {val} (runtime)")
 
     def _update_all_labels(self):
         for key, widget in self.labels.items():
+            if key == 'status':
+                continue
+            val = self.settings.get(key, 0)
             if isinstance(widget, Gtk.Switch):
-                widget.set_active(bool(self.settings.get(key, False)))
+                widget.set_active(bool(val))
             elif isinstance(widget, Gtk.Label):
-                val = self.settings.get(key, 0)
                 widget.set_label(f"{val}")
