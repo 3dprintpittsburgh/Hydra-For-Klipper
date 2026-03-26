@@ -95,21 +95,20 @@ class Panel(ScreenPanel):
     def _update_status(self):
         self.labels['tool'].set_markup(f"<b>Active: T{self.active_tool}</b>")
         try:
-            # Try runtime stat first, fall back to config
+            # Start with config defaults, overlay runtime values
+            x, y, z = 0.0, 0.0, 0.0
+            cfg_section = self._printer.get_config_section(HYDRA_CONFIG)
+            if cfg_section:
+                x = float(cfg_section.get("variable_offset_x_t1", "0"))
+                y = float(cfg_section.get("variable_offset_y_t1", "0"))
+                z = float(cfg_section.get("variable_offset_z_t1", "0"))
+            # Runtime values take priority (may have been updated by calibration)
             cfg = self._printer.get_stat(HYDRA_CONFIG)
-            if not cfg:
-                cfg_section = self._printer.get_config_section(HYDRA_CONFIG)
-                if cfg_section:
-                    x = float(cfg_section.get("variable_offset_x_t1", "0"))
-                    y = float(cfg_section.get("variable_offset_y_t1", "0"))
-                    z = float(cfg_section.get("variable_offset_z_t1", "0"))
-                    self.labels['offsets'].set_label(f"T1 Offsets  X:{x:+.2f}  Y:{y:+.2f}  Z:{z:+.2f}")
-                    return
             if cfg:
-                x = float(cfg.get("offset_x_t1", 0))
-                y = float(cfg.get("offset_y_t1", 0))
-                z = float(cfg.get("offset_z_t1", 0))
-                self.labels['offsets'].set_label(f"T1 Offsets  X:{x:+.2f}  Y:{y:+.2f}  Z:{z:+.2f}")
+                x = float(cfg.get("offset_x_t1", x))
+                y = float(cfg.get("offset_y_t1", y))
+                z = float(cfg.get("offset_z_t1", z))
+            self.labels['offsets'].set_label(f"T1 Offsets  X:{x:+.2f}  Y:{y:+.2f}  Z:{z:+.2f}")
         except Exception:
             self.labels['offsets'].set_label("Offsets: --")
 

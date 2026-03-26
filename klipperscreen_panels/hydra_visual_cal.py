@@ -206,5 +206,31 @@ class Panel(ScreenPanel):
 
     def save_offsets(self, widget):
         self._screen._ws.klippy.gcode_script("SAVE_IDEX_XY_VISUAL")
+
+        # Also write to config file for persistence
+        import os, re
+        try:
+            filepath = os.path.expanduser("~/printer_data/config/hydra_variables.cfg")
+            if os.path.isfile(filepath):
+                values = {"offset_x_t1": self.nudge_x, "offset_y_t1": self.nudge_y}
+                with open(filepath, 'r') as f:
+                    lines = f.readlines()
+                new_lines = []
+                for line in lines:
+                    match = re.match(r'^(variable_(\w+))\s*:', line)
+                    if match and match.group(2) in values:
+                        val = values[match.group(2)]
+                        comment = ""
+                        if "#" in line:
+                            comment = "  " + line[line.index("#"):].strip()
+                        val_str = str(int(val)) if isinstance(val, float) and val == int(val) else str(val)
+                        new_lines.append(f"variable_{match.group(2)}: {val_str}{comment}\n")
+                    else:
+                        new_lines.append(line)
+                with open(filepath, 'w') as f:
+                    f.writelines(new_lines)
+        except Exception as e:
+            logging.error(f"Hydra Visual Cal: Config save error: {e}")
+
         self._set_idle_state()
         self._update_offset_label()

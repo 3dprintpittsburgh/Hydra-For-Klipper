@@ -43,9 +43,10 @@ class Panel(ScreenPanel):
 
         row = self._add_separator(grid, row)
 
-        # Numeric: Retract/Prime
-        row = self._add_numeric(grid, row, "retract_distance", "Retract (mm)", 1, 0, 50)
-        row = self._add_numeric(grid, row, "prime_distance", "Prime (mm)", 1, 0, 50)
+        # Numeric: Filament
+        row = self._add_numeric(grid, row, "retract_distance", "Park Retract (mm)", 1, 0, 50)
+        row = self._add_numeric(grid, row, "wipe_retract", "Wipe Retract (mm)", 0.5, 0, 10)
+        row = self._add_numeric(grid, row, "extra_prime", "Extra Prime (mm)", 0.5, 0, 10)
 
         row = self._add_separator(grid, row)
 
@@ -61,7 +62,7 @@ class Panel(ScreenPanel):
         row = self._add_separator(grid, row)
 
         # Numeric: Wipe
-        row = self._add_numeric(grid, row, "wipe_purge_length", "Purge Length (mm)", 5, 0, 100)
+        row = self._add_numeric(grid, row, "wipe_purge_length", "Purge Length (mm)", 1, 0, 100)
         row = self._add_numeric(grid, row, "wipe_cool_time", "Cool Time (s)", 1, 0, 30)
 
         row = self._add_separator(grid, row)

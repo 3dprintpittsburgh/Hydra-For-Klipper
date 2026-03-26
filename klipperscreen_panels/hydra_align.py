@@ -152,6 +152,7 @@ class Panel(ScreenPanel):
         self.labels['y_val'].set_label(f"Y:{self.y_offset:+.2f}")
 
     def save_offsets(self, widget):
+        # Apply to runtime + saved variables
         script = (
             f"SET_GCODE_VARIABLE MACRO=_HYDRA_CONFIG VARIABLE=offset_x_t1 VALUE={self.x_offset}\n"
             f"SET_GCODE_VARIABLE MACRO=_HYDRA_CONFIG VARIABLE=offset_y_t1 VALUE={self.y_offset}\n"
@@ -160,9 +161,46 @@ class Panel(ScreenPanel):
             f'RESPOND MSG="Hydra: XY offsets saved X={self.x_offset} Y={self.y_offset}"'
         )
         self._screen._ws.klippy.gcode_script(script)
+
+        # Also write to hydra_variables.cfg for persistence across restarts
+        self._save_to_config_file({
+            "offset_x_t1": self.x_offset,
+            "offset_y_t1": self.y_offset
+        })
+
         self.labels['status'].set_label(f"Saved X:{self.x_offset:.2f} Y:{self.y_offset:.2f}")
         self.initial_x = self.x_offset
         self.initial_y = self.y_offset
+
+    def _save_to_config_file(self, values):
+        """Write values to hydra_variables.cfg on disk."""
+        import os, re
+        try:
+            filepath = os.path.expanduser("~/printer_data/config/hydra_variables.cfg")
+            if not os.path.isfile(filepath):
+                return
+            with open(filepath, 'r') as f:
+                lines = f.readlines()
+            new_lines = []
+            for line in lines:
+                match = re.match(r'^(variable_(\w+))\s*:', line)
+                if match and match.group(2) in values:
+                    val = values[match.group(2)]
+                    comment = ""
+                    if "#" in line:
+                        comment = "  " + line[line.index("#"):].strip()
+                    if isinstance(val, float):
+                        val_str = str(int(val)) if val == int(val) else str(val)
+                    else:
+                        val_str = str(val)
+                    new_lines.append(f"variable_{match.group(2)}: {val_str}{comment}\n")
+                else:
+                    new_lines.append(line)
+            with open(filepath, 'w') as f:
+                f.writelines(new_lines)
+            logging.info(f"Hydra Align: Saved offsets to {filepath}")
+        except Exception as e:
+            logging.error(f"Hydra Align: Config save error: {e}")
 
     def print_test(self, widget):
         self.temp_values = {'t0': 200, 't1': 200, 'bed': 60}
