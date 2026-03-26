@@ -77,17 +77,27 @@ Then:
 ## Toolchange Sequence
 
 ```
-1. PARK outgoing tool
+1. PREHEAT incoming nozzle (non-blocking M104)
+
+2. PARK outgoing tool (_HYDRA_PARK)
    ├── Save position, save/disable fan
    ├── Retract filament, drop to standby temp
    ├── Z hop, move to park position
    └── LED: zone → standby
 
-2. RESTORE incoming tool
-   ├── Switch carriage, apply offsets
-   ├── Restore temp, wait for ready
-   ├── Move to NEXT position (lookahead) or saved position
-   ├── Drop Z, prime filament, restore fan
+3. ACTIVATE incoming tool (_HYDRA_ACTIVATE)
+   ├── Switch carriage, apply gcode offsets
+   └── Wait for temperature
+
+4. NOZZLE WIPE (if enabled)
+   ├── Move to wiper position, extrude purge line
+   ├── Fan blast to solidify
+   └── Snap move against wiper wall to knock off blob
+
+5. POSITION incoming tool (_HYDRA_POSITION)
+   ├── Move XY to target (lookahead, saved, or bed center)
+   ├── Drop Z (undo hop)
+   ├── Prime filament, restore fan
    └── LED: zone → printing
 ```
 

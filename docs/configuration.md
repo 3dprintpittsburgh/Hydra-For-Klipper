@@ -134,6 +134,7 @@ gcode:
 | `HYDRA_INIT TOOL=n` | Initialize state (called by START_PRINT) |
 | `HYDRA_STATUS` | Show full state and configuration |
 | `HYDRA_RESET` | Clear all saved offsets and state |
+| `NOZZLE_WIPE` | Purge, fan blast, snap against wiper wall |
 | `START_PRINT` | Print start with smart T1 preheat |
 | `END_PRINT` | Print end with cleanup |
 | `PAUSE` / `RESUME` | Park/restore active tool |
@@ -154,11 +155,13 @@ hydra-klipper/
 │   ├── hydra_calibration.cfg      # Z/XY calibration + offset persistence
 │   ├── hydra_fan.cfg              # M106/M107 fan routing
 │   ├── hydra_print.cfg            # START/END_PRINT, PAUSE/RESUME
-│   └── hydra_leds.cfg             # Zone-aware LED effects
+│   ├── hydra_leds.cfg             # Zone-aware LED effects
+│   └── hydra_wipe.cfg             # Nozzle wipe/purge system
 ├── klipperscreen_panels/
 │   ├── hydra_dashboard.py         # IDEX dashboard hub
 │   ├── hydra_align.py             # XY fine-tune visualization
-│   └── hydra_visual_cal.py        # Phase 1 eyeball D-pad
+│   ├── hydra_visual_cal.py        # Phase 1 eyeball D-pad
+│   └── hydra_settings.py          # Runtime settings toggles
 ├── scripts/
 │   └── install.sh
 ├── examples/
