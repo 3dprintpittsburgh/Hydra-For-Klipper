@@ -1,176 +1,216 @@
 # LED Effects Setup for Hydra
 
-Hydra supports LED effects during toolchanges and printing. LEDs are entirely optional - if you don't have LEDs, just leave the config values as empty strings and Hydra will skip all LED calls.
+Hydra supports zone-aware LED effects that show each toolhead's state independently. Your LED strip is split into two zones (left for T0, right for T1) with per-state effects.
 
-## How It Works
+## LED States
 
-Hydra calls LEDs at two moments during each toolchange:
+| State | When | Suggested Effect |
+|-------|------|-----------------|
+| **toolchange** | During carriage switch (global, full strip) | Pulsing gradient |
+| **printing** | Tool is actively printing (zone) | Solid bright white |
+| **standby** | Tool parked, holding temperature (zone) | Slow breathing warm |
+| **preheating** | Tool heating up from cold (zone) | Fast pulsing orange |
+| **idle** | Tool cold, inactive (zone) | Off or dim |
 
-1. **Toolchange starts** → activates a "waiting" effect (e.g., pulsing gradient)
-2. **Toolchange completes** → stops effects and calls a "printing" macro (e.g., solid white)
+## Quick Setup
 
-These are configured via two variables in `hydra_variables.cfg`:
+### 1. Configure Zones in `hydra_variables.cfg`
 
 ```ini
-# LED effects (set to empty string "" to disable)
-variable_led_toolchange_effect: "toolchange_wait"
-variable_led_printing_macro: "SET_PRINTING_LEDS"
+# Your neopixel strip name
+variable_led_strip_name: "main_leds"
+
+# Split your strip into two zones
+variable_led_zone_left_start: 1       # T0 zone: pixels 1-12
+variable_led_zone_left_end: 12
+variable_led_zone_right_start: 13     # T1 zone: pixels 13-24
+variable_led_zone_right_end: 24
+
+# Effect names per state (must match [led_effect] section names)
+variable_led_effect_toolchange: "hydra_toolchange"
+variable_led_effect_printing: "hydra_printing"
+variable_led_effect_standby: "hydra_standby"
+variable_led_effect_preheating: "hydra_preheating"
+variable_led_effect_idle: ""           # Empty = LEDs off for this state
 ```
 
-## Configuration Options
+### 2. Define LED Effects in `printer.cfg`
 
-### Option 1: Full LED Effects (Recommended)
-
-Uses the [LED Effects](https://github.com/julianschill/klipper-led_effect) plugin for animated effects during toolchange, and a simple macro for the steady printing state.
-
-**Requirements:**
-- Neopixel/WS2812 LEDs connected to your printer
-- [klipper-led_effect](https://github.com/julianschill/klipper-led_effect) plugin installed
-
-**In your printer.cfg:**
+Requires [klipper-led_effect](https://github.com/julianschill/klipper-led_effect) plugin.
 
 ```ini
 # Your LED hardware
 [neopixel main_leds]
-pin: PB0                    # Your LED data pin
-chain_count: 24
-color_order: GRB
-initial_RED: 1.0
-initial_GREEN: 0.0
-initial_BLUE: 1.0
-
-# Toolchange waiting effect - animated gradient while switching tools
-[led_effect toolchange_wait]
-autostart: false
-frame_rate: 24
-leds:
-    neopixel:main_leds
-layers:
-    gradient 0.5 1 top (1,1,0),(1,0,1)
-
-# Optional: error effect (auto-starts on Klipper error)
-[led_effect critical_error]
-leds:
-    neopixel:main_leds
-layers:
-    strobe 1 1.5 add (1.0, 1.0, 1.0)
-    breathing 2 0 difference (0.95, 0.0, 0.0)
-    static 1 0 top (1.0, 0.0, 0.0)
-autostart: false
-frame_rate: 24
-run_on_error: true
-
-# Steady printing state - called after toolchange completes
-[gcode_macro SET_PRINTING_LEDS]
-gcode:
-    SET_LED LED=main_leds RED=1 GREEN=1 BLUE=1
-```
-
-**In hydra_variables.cfg:**
-
-```ini
-variable_led_toolchange_effect: "toolchange_wait"
-variable_led_printing_macro: "SET_PRINTING_LEDS"
-```
-
-### Option 2: Simple Macro-Only (No Plugin Required)
-
-If you don't want to install the LED Effects plugin, you can use plain Klipper LED commands. Create two macros and point Hydra to the "printing" one. The toolchange effect won't animate, but you'll get a color change.
-
-**In your printer.cfg:**
-
-```ini
-[neopixel main_leds]
 pin: PB0
 chain_count: 24
 color_order: GRB
+initial_RED: 0.3
+initial_GREEN: 0
+initial_BLUE: 0.3
 
-# Toolchange color (called as an effect name - requires led_effect plugin)
-# Without the plugin, leave toolchange_effect empty and use the printing macro only
+# --- Global effects (full strip) ---
 
-# Printing state
-[gcode_macro SET_PRINTING_LEDS]
-gcode:
-    SET_LED LED=main_leds RED=1 GREEN=1 BLUE=1
+[led_effect hydra_toolchange]
+autostart: false
+frame_rate: 24
+leds:
+    neopixel:main_leds
+layers:
+    gradient 0.5 1 top (0.5,0,1),(0,0.8,1)
+
+# --- T0 zone effects (left side, pixels 1-12) ---
+
+[led_effect hydra_printing]
+autostart: false
+frame_rate: 24
+leds:
+    neopixel:main_leds (1-12)
+layers:
+    static 0 0 top (1,1,1)
+
+[led_effect hydra_standby]
+autostart: false
+frame_rate: 24
+leds:
+    neopixel:main_leds (1-12)
+layers:
+    breathing 3 0 top (1,0.5,0)
+
+[led_effect hydra_preheating]
+autostart: false
+frame_rate: 24
+leds:
+    neopixel:main_leds (1-12)
+layers:
+    breathing 1 0 top (1,0.3,0)
+
+# --- T1 zone effects (right side, pixels 13-24) ---
+# Duplicate the above effects but targeting different pixels:
+
+[led_effect hydra_printing_t1]
+autostart: false
+frame_rate: 24
+leds:
+    neopixel:main_leds (13-24)
+layers:
+    static 0 0 top (1,1,1)
+
+[led_effect hydra_standby_t1]
+autostart: false
+frame_rate: 24
+leds:
+    neopixel:main_leds (13-24)
+layers:
+    breathing 3 0 top (0,0.5,1)
+
+[led_effect hydra_preheating_t1]
+autostart: false
+frame_rate: 24
+leds:
+    neopixel:main_leds (13-24)
+layers:
+    breathing 1 0 top (0,0.3,1)
 ```
 
-**In hydra_variables.cfg:**
+**Important:** The LED Effects plugin applies effects to specific pixel ranges defined in each `[led_effect]` section. Hydra calls effects by name - the pixel targeting is in the effect definition, not in Hydra's macros.
+
+### 3. Per-Zone Effect Naming Convention
+
+For per-zone effects, you have two approaches:
+
+**Approach A: Shared effect names (simpler)**
+
+Use the same effect name for both zones. The effect definition targets the full strip. Both zones show the same pattern:
 
 ```ini
-variable_led_toolchange_effect: ""                # Empty = no toolchange animation
-variable_led_printing_macro: "SET_PRINTING_LEDS"  # Still sets LEDs after toolchange
+variable_led_effect_printing: "hydra_printing"    # Same for both tools
+
+[led_effect hydra_printing]
+leds:
+    neopixel:main_leds                            # Full strip
 ```
 
-### Option 3: Per-Tool Colors
+**Approach B: Per-tool effect names (more control)**
 
-You can make LEDs show which tool is active by creating a smarter printing macro:
+Define separate effects per zone with different pixel ranges and colors. Use Hydra's `_HYDRA_LED_TOOL` macro directly in your user hooks, or modify the effect names to include tool-specific variants.
+
+For maximum control, override `_HYDRA_LED_TOOL` in your printer.cfg:
 
 ```ini
-[gcode_macro SET_PRINTING_LEDS]
+[gcode_macro _HYDRA_LED_TOOL]
 gcode:
-    {% set tool = printer["gcode_macro _HYDRA_CONFIG"].active_tool %}
-    {% if tool == 0 %}
-        # T0 active - blue
-        SET_LED LED=main_leds RED=0.2 GREEN=0.2 BLUE=1.0
-    {% elif tool == 1 %}
-        # T1 active - cyan
-        SET_LED LED=main_leds RED=0.0 GREEN=0.8 BLUE=1.0
+    {% set tool = params.TOOL|default(0)|int %}
+    {% set state = params.STATE|default("idle")|string %}
+
+    {% if state == "printing" %}
+        {% if tool == 0 %}
+            SET_LED_EFFECT EFFECT=hydra_printing STOP=1
+            SET_LED_EFFECT EFFECT=hydra_printing
+        {% else %}
+            SET_LED_EFFECT EFFECT=hydra_printing_t1 STOP=1
+            SET_LED_EFFECT EFFECT=hydra_printing_t1
+        {% endif %}
+    {% elif state == "standby" %}
+        {% if tool == 0 %}
+            SET_LED_EFFECT EFFECT=hydra_standby
+        {% else %}
+            SET_LED_EFFECT EFFECT=hydra_standby_t1
+        {% endif %}
+    {% elif state == "preheating" %}
+        {% if tool == 0 %}
+            SET_LED_EFFECT EFFECT=hydra_preheating
+        {% else %}
+            SET_LED_EFFECT EFFECT=hydra_preheating_t1
+        {% endif %}
     {% else %}
-        # No tool / idle - white
-        SET_LED LED=main_leds RED=1 GREEN=1 BLUE=1
+        # Idle - turn off this zone
+        {% set cfg = printer["gcode_macro _HYDRA_CONFIG"] %}
+        {% if tool == 0 %}
+            {% for i in range(cfg.led_zone_left_start, cfg.led_zone_left_end + 1) %}
+                SET_LED LED={cfg.led_strip_name} INDEX={i} RED=0 GREEN=0 BLUE=0
+            {% endfor %}
+        {% else %}
+            {% for i in range(cfg.led_zone_right_start, cfg.led_zone_right_end + 1) %}
+                SET_LED LED={cfg.led_strip_name} INDEX={i} RED=0 GREEN=0 BLUE=0
+            {% endfor %}
+        {% endif %}
     {% endif %}
 ```
 
-### Option 4: No LEDs
+## When LEDs Update
 
-Just set both values to empty strings:
+Hydra updates LEDs at these moments:
+
+| Moment | What happens |
+|--------|-------------|
+| **START_PRINT** heats T0 | T0 zone → preheating |
+| **START_PRINT** heats T1 (if dual) | T1 zone → preheating |
+| **START_PRINT** temps reached | `_HYDRA_LED_UPDATE` → zones reflect actual state |
+| **Toolchange starts** | Global → toolchange effect |
+| **Tool parked** | Parked tool's zone → standby or idle |
+| **Toolchange completes** | `_HYDRA_LED_UPDATE` → zones reflect new state |
+| **END_PRINT** | Global → off |
+
+## Disabling LEDs
+
+Set `led_strip_name` to empty string to disable everything:
 
 ```ini
-variable_led_toolchange_effect: ""
-variable_led_printing_macro: ""
+variable_led_strip_name: ""
 ```
 
-Hydra will skip all LED calls entirely.
-
-## How Hydra Calls LEDs Internally
-
-In `hydra.cfg`, the `IDEX_TOOL_CHANGE` macro does:
-
-```python
-# Toolchange starts
-{% if cfg.led_toolchange_effect %}
-    SET_LED_EFFECT EFFECT={cfg.led_toolchange_effect}
-{% endif %}
-
-# ... park, switch, restore ...
-
-# Toolchange completes
-{% if cfg.led_toolchange_effect %}
-    STOP_LED_EFFECTS
-{% endif %}
-{% if cfg.led_printing_macro %}
-    {cfg.led_printing_macro}
-{% endif %}
-```
-
-The `SET_LED_EFFECT` and `STOP_LED_EFFECTS` commands come from the [klipper-led_effect](https://github.com/julianschill/klipper-led_effect) plugin. The printing macro is a plain Klipper gcode macro that you define.
+All LED macros check this value and skip entirely when empty.
 
 ## Troubleshooting
 
 **"Unknown command SET_LED_EFFECT":**
-You have `variable_led_toolchange_effect` set but don't have the LED Effects plugin installed. Either install the plugin or set `variable_led_toolchange_effect: ""` to disable.
+Install [klipper-led_effect](https://github.com/julianschill/klipper-led_effect) or set all effect names to `""`.
 
-**LEDs don't change during toolchange:**
-- Check that `variable_led_toolchange_effect` matches the exact name in your `[led_effect]` section
-- Check that `variable_led_printing_macro` matches your macro name exactly
-- Verify with `SET_LED_EFFECT EFFECT=toolchange_wait` from the console
+**Only one zone updates:**
+Make sure your `[led_effect]` sections target the correct pixel ranges with `(start-end)` syntax.
 
-**LEDs stay in toolchange pattern after print:**
-Your END_PRINT or `_HYDRA_USER_END_PRINT` should reset LEDs. Add `STOP_LED_EFFECTS` and your desired idle LED state to the user hook:
+**LEDs stuck after print:**
+Add `STOP_LED_EFFECTS` to your `_HYDRA_USER_END_PRINT` override, or check that END_PRINT is being called.
 
-```ini
-[gcode_macro _HYDRA_USER_END_PRINT]
-gcode:
-    STOP_LED_EFFECTS
-    SET_LED LED=main_leds RED=0.5 GREEN=0 BLUE=0.5    # Idle purple
-```
+**Effects overlap/flash:**
+The `_HYDRA_LED_TOOL` macro calls `STOP=1` before starting a new effect. If effects still overlap, check that you don't have `autostart: true` on any Hydra effects.
