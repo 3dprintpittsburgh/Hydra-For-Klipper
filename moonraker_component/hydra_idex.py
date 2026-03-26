@@ -191,11 +191,33 @@ def _rewrite_toolchanges(
     lookahead_count = 0
     total_tc = len(toolchanges)
     start_print_injected = False
+    # Track per-tool temps and which tools have had their first call
+    tool_temps: Dict[int, float] = {}  # populated from START_PRINT params
+    tools_first_called: set = set()
+    start_print_line: str = ""
 
     for i, line in enumerate(lines):
         if i in tc_map:
             _, tool_num, next_x, next_y = tc_map[i]
             tools_used.add(tool_num)
+
+            # Before a tool's first REAL call (not the initial tool selection),
+            # inject M104 to full printing temp (tool is at standby from preheat)
+            if tool_num not in tools_first_called:
+                initial = _extract_param(
+                    start_print_line, 'INITIAL_TOOL'
+                ) if start_print_line else '0'
+                is_initial_selection = (
+                    str(tool_num) == (initial or '0')
+                    and len(tools_first_called) == 0
+                )
+                if not is_initial_selection and tool_num in tool_temps:
+                    temp = int(tool_temps[tool_num])
+                    output.append(
+                        f"M104 S{temp} T{tool_num}"
+                        f" ; Hydra: bring T{tool_num} to active temp\n"
+                    )
+            tools_first_called.add(tool_num)
 
             if next_x is not None and next_y is not None:
                 output.append(
@@ -219,10 +241,19 @@ def _rewrite_toolchanges(
                 )
             else:
                 output.append(line)
+            # Extract tool temps for first-call injection later
+            start_print_line = stripped
+            t0_temp_str = _extract_param(stripped, 'EXTRUDER_TEMP')
+            t1_temp_str = _extract_param(stripped, 'EXTRUDER_TEMP_T1')
+            initial_tool = _extract_param(stripped, 'INITIAL_TOOL')
+            if t0_temp_str and float(t0_temp_str) > 0:
+                tool_temps[0] = float(t0_temp_str)
+            if t1_temp_str and float(t1_temp_str) > 0:
+                tool_temps[1] = float(t1_temp_str)
+
             # Inject T1 preheat if this is a multi-tool print
             if total_tc > 0:
-                t1_temp = _extract_param(stripped, 'EXTRUDER_TEMP_T1')
-                initial_tool = _extract_param(stripped, 'INITIAL_TOOL')
+                t1_temp = t1_temp_str
                 if t1_temp and float(t1_temp) > 0:
                     t1_val = float(t1_temp)
                     # If T1 isn't the initial tool, preheat to standby temp
