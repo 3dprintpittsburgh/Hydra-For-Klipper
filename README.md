@@ -3,40 +3,41 @@
 </p>
 
 <p align="center">
-  <em>Intelligent IDEX toolchange management with gcode lookahead preprocessing</em>
+  <em>A complete IDEX toolchange management system for Klipper</em>
 </p>
 
 ---
 
-## The Problem
+## Why Hydra Exists
 
-IDEX toolchanges are blind. When a slicer inserts `T1`, the firmware has no idea where the nozzle needs to go next. Traditional approaches move the new nozzle to the *old* nozzle's last position, then the slicer moves it where it actually needs to be. This causes wrong-color contamination, wasted travel, and ooze at the wrong spot.
+Klipper's `[dual_carriage]` gives you the hardware foundation for IDEX printing - it can switch carriages and track two extruders. But that's where it stops. Out of the box, there are no toolchange macros, no temperature management between tools, no fan routing, no calibration system, and no UI. You're left to figure out the entire toolchange workflow yourself: when to retract, how to park, how to handle standby temperatures, how to prevent the inactive nozzle from dragging across your print, and how to calibrate the offset between two nozzles that have never met.
 
-## How Hydra Solves It
+Every IDEX Klipper user ends up writing the same fragile macros from scratch, debugging the same edge cases, and reinventing the same solutions.
 
-Hydra adds a **Moonraker preprocessor** that scans uploaded gcode files and finds the next XY position after each toolchange:
+## What Hydra Does
+
+Hydra is a complete IDEX management system that picks up where Klipper leaves off. It handles every aspect of dual-nozzle printing:
+
+**Intelligent Toolchange** - A full park/restore sequence with filament retraction, temperature standby, fan management, collision avoidance, and per-tool state tracking. Handles both hot toolchanges during a print and cold manual switching from the UI.
+
+**Gcode Lookahead** - A Moonraker preprocessor scans uploaded gcode and rewrites toolchange commands with the next print position, so the incoming nozzle moves directly to where it's needed instead of dragging across the other color's part:
 
 ```gcode
-; Before (raw slicer output):
-T1
-
-; After (Hydra preprocessed):
-IDEX_TOOL_CHANGE T=1 NEXT_X=201.101 NEXT_Y=188.646 ; T1
+; Before:  T1
+; After:   IDEX_TOOL_CHANGE T=1 NEXT_X=201.101 NEXT_Y=188.646 ; T1
 ```
 
-The Klipper macros move the incoming nozzle **directly to where it's needed**, prime there, and start printing immediately. Falls back to saved-position mode for non-preprocessed files.
+**Calibration System** - A guided workflow for aligning T1 to T0: Z-offset paper test with auto-save (using KlipperScreen's familiar TESTZ interface), two-phase XY alignment (visual eyeball with live D-pad nudge, then precision print test with concentric squares), and persistent offset storage that survives restarts.
 
-## Features
+**Smart Print Lifecycle** - START_PRINT that knows whether a file uses one tool or two (via slicer's `[total_toolchanges]`), only preheats T1 when needed, and initializes the toolchange system automatically. PAUSE parks the active tool, RESUME restores it.
 
-- **Gcode lookahead** - Moonraker preprocessor finds next print position after each toolchange
-- **Smart toolchange** - Park, retract, standby temp, switch, restore temp, prime, fan management
-- **Collision avoidance** - Safe distance enforcement between carriages
-- **Calibration system** - Z-offset paper test with auto-save, two-phase XY alignment
-- **Zone LED effects** - Per-tool LED zones with state-aware effects (printing, standby, preheating)
-- **Fan routing** - M106/M107 overrides route to active tool's fan automatically
-- **Print lifecycle** - START/END_PRINT with smart T1 preheat and user override hooks
-- **KlipperScreen panels** - Dashboard, XY alignment visualization, visual calibration D-pad
-- **Cold toolchange** - Manual T0/T1 switching without heating
+**Fan Routing** - M106/M107 overrides that route part cooling commands to the active tool's fan. No more manually managing which fan pin gets which speed.
+
+**Zone LED Effects** - Split your LED strip into per-tool zones that independently show each nozzle's state: preheating, printing, standby, idle. See at a glance what both tools are doing.
+
+**KlipperScreen Integration** - Dashboard for tool selection and status, XY alignment visualization with Cairo-drawn square overlay, and a D-pad interface for live nozzle nudging during calibration.
+
+**Everything Configurable** - One file (`hydra_variables.cfg`) controls retract distances, speeds, park positions, standby temperatures, fan pins, LED zones, calibration reference points, and collision safety margins. Zero hardcoded values in the macro logic.
 
 ## Requirements
 
