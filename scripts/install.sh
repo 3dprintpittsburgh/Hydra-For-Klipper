@@ -78,7 +78,7 @@ info "Symlinked hydra_idex.py -> ${COMPONENT_DIR}/"
 # All other macro files are always updated to latest version
 info "Installing Klipper macros..."
 
-for macro_file in hydra.cfg hydra_calibration.cfg hydra_fan.cfg hydra_print.cfg hydra_leds.cfg; do
+for macro_file in hydra.cfg hydra_calibration.cfg hydra_fan.cfg hydra_print.cfg hydra_leds.cfg hydra_wipe.cfg; do
     cp "${HYDRA_DIR}/klipper_macros/${macro_file}" "${CONFIG_DIR}/${macro_file}"
     info "Installed ${macro_file}"
 done
