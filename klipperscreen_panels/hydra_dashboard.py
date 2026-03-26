@@ -74,16 +74,13 @@ class Panel(ScreenPanel):
         btn_home.connect("clicked", self.run_gcode, "G28")
         btn_show = self._gtk.Button("info", "Show Offsets", "color1", self.bts)
         btn_show.connect("clicked", self.run_gcode, "SHOW_IDEX_OFFSETS")
-        btn_status = self._gtk.Button("console", "Hydra Status", "color1", self.bts)
-        btn_status.connect("clicked", self.run_gcode, "HYDRA_STATUS")
-
         btn_settings = self._gtk.Button("settings", "Settings", "color2", self.bts)
         btn_settings.connect("clicked", self.open_panel, "hydra_settings")
 
         grid.attach(btn_xy_test, 0, 4, 1, 1)
         grid.attach(btn_home, 1, 4, 1, 1)
-        grid.attach(btn_settings, 2, 4, 1, 1)
-        grid.attach(btn_status, 3, 4, 1, 1)
+        grid.attach(btn_show, 2, 4, 1, 1)
+        grid.attach(btn_settings, 3, 4, 1, 1)
 
         self.content.add(grid)
 
