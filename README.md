@@ -92,7 +92,7 @@ Then:
 4. NOZZLE WIPE (if enabled)
    ├── Move to wiper position, extrude purge line
    ├── Fan blast to solidify
-   └── Snap move against wiper wall to knock off blob
+   └── Snap move against wiper wall to knock off purge line
 
 5. POSITION incoming tool (_HYDRA_POSITION)
    ├── Move XY to target (lookahead, saved, or bed center)
