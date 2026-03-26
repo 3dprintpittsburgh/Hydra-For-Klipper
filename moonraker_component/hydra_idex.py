@@ -58,6 +58,27 @@ logger = logging.getLogger(__name__)
 # Standalone preprocessing functions (used by both component and script)
 # =========================================================================
 
+def _read_standby_factor(filepath: str) -> float:
+    """Read standby_temp_factor from hydra_variables.cfg on disk."""
+    # Derive config dir from gcode path: .../printer_data/gcodes/file.gcode
+    # -> .../printer_data/config/hydra_variables.cfg
+    gcodes_dir = os.path.dirname(os.path.realpath(filepath))
+    config_dir = os.path.join(os.path.dirname(gcodes_dir), 'config')
+    var_file = os.path.join(config_dir, 'hydra_variables.cfg')
+    try:
+        if os.path.isfile(var_file):
+            with open(var_file, 'r') as f:
+                for line in f:
+                    match = re.match(
+                        r'^variable_standby_temp_factor\s*:\s*([\d.]+)', line
+                    )
+                    if match:
+                        return float(match.group(1))
+    except Exception:
+        pass
+    return 0.9  # default
+
+
 def preprocess_file(filepath: str, backup: bool = False) -> Optional[Dict[str, Any]]:
     """
     Core preprocessing algorithm.
@@ -66,6 +87,7 @@ def preprocess_file(filepath: str, backup: bool = False) -> Optional[Dict[str, A
     Returns metadata dict or None if skipped.
     """
     filepath = os.path.realpath(filepath)
+    standby_factor = _read_standby_factor(filepath)
 
     with open(filepath, 'r') as f:
         lines = f.readlines()
@@ -85,7 +107,9 @@ def preprocess_file(filepath: str, backup: bool = False) -> Optional[Dict[str, A
         return None
 
     # Second pass: rewrite toolchange lines with lookahead data
-    output_lines, metadata = _rewrite_toolchanges(lines, toolchanges)
+    output_lines, metadata = _rewrite_toolchanges(
+        lines, toolchanges, standby_factor
+    )
 
     if not output_lines:
         return None
@@ -156,7 +180,8 @@ def _extract_param(line: str, param: str) -> Optional[str]:
 
 def _rewrite_toolchanges(
     lines: List[str],
-    toolchanges: List[Tuple[int, int, Optional[float], Optional[float]]]
+    toolchanges: List[Tuple[int, int, Optional[float], Optional[float]]],
+    standby_factor: float = 0.9
 ) -> Tuple[List[str], Dict[str, Any]]:
     """Rewrite toolchange lines with IDEX_TOOL_CHANGE commands."""
     tc_map = {tc[0]: tc for tc in toolchanges}
@@ -197,10 +222,19 @@ def _rewrite_toolchanges(
             # Inject T1 preheat if this is a multi-tool print
             if total_tc > 0:
                 t1_temp = _extract_param(stripped, 'EXTRUDER_TEMP_T1')
+                initial_tool = _extract_param(stripped, 'INITIAL_TOOL')
                 if t1_temp and float(t1_temp) > 0:
+                    t1_val = float(t1_temp)
+                    # If T1 isn't the initial tool, preheat to standby temp
+                    # (it'll reach full temp when first toolchange happens)
+                    if initial_tool != '1':
+                        t1_val = int(t1_val * standby_factor)
+                    else:
+                        t1_val = int(t1_val)
                     output.append(
-                        f"M104 S{t1_temp} T1"
-                        f" ; Hydra: preheat T1 for {total_tc} toolchanges\n"
+                        f"M104 S{t1_val} T1"
+                        f" ; Hydra: preheat T1 for {total_tc} toolchanges"
+                        f" ({'standby' if initial_tool != '1' else 'active'})\n"
                     )
             start_print_injected = True
         else:
