@@ -73,18 +73,19 @@ ln -sf "${HYDRA_DIR}/moonraker_component/hydra_idex.py" \
        "${COMPONENT_DIR}/hydra_idex.py"
 info "Symlinked hydra_idex.py -> ${COMPONENT_DIR}/"
 
-# Copy macro files (don't overwrite if exists - preserve user config)
+# Copy macro files
+# hydra_variables.cfg is the only user-edited file - don't overwrite if exists
+# All other macro files are always updated to latest version
 info "Installing Klipper macros..."
-if [ ! -f "${CONFIG_DIR}/hydra.cfg" ]; then
-    cp "${HYDRA_DIR}/klipper_macros/hydra.cfg" "${CONFIG_DIR}/hydra.cfg"
-    info "Installed hydra.cfg"
-else
-    warn "hydra.cfg already exists - skipping (preserving your config)"
-fi
+
+for macro_file in hydra.cfg hydra_calibration.cfg hydra_fan.cfg hydra_print.cfg hydra_leds.cfg; do
+    cp "${HYDRA_DIR}/klipper_macros/${macro_file}" "${CONFIG_DIR}/${macro_file}"
+    info "Installed ${macro_file}"
+done
 
 if [ ! -f "${CONFIG_DIR}/hydra_variables.cfg" ]; then
     cp "${HYDRA_DIR}/klipper_macros/hydra_variables.cfg" "${CONFIG_DIR}/hydra_variables.cfg"
-    info "Installed hydra_variables.cfg"
+    info "Installed hydra_variables.cfg (edit this with your printer's values)"
 else
     warn "hydra_variables.cfg already exists - skipping (preserving your config)"
 fi
