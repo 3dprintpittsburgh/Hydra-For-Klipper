@@ -73,6 +73,20 @@ ln -sf "${HYDRA_DIR}/moonraker_component/hydra_idex.py" \
        "${COMPONENT_DIR}/hydra_idex.py"
 info "Symlinked hydra_idex.py -> ${COMPONENT_DIR}/"
 
+# Install Klipper extras
+info "Installing Klipper extras..."
+KLIPPER_DIR="${HOME}/klipper"
+EXTRAS_DIR="${KLIPPER_DIR}/klippy/extras"
+if [ -d "$EXTRAS_DIR" ]; then
+    for extra in "${HYDRA_DIR}"/klipper_extras/*.py; do
+        [ -f "$extra" ] || continue
+        ln -sf "$extra" "${EXTRAS_DIR}/$(basename $extra)"
+        info "Symlinked $(basename $extra) -> ${EXTRAS_DIR}/"
+    done
+else
+    warn "Klipper extras directory not found at ${EXTRAS_DIR} - skipping"
+fi
+
 # Copy macro files
 # hydra_variables.cfg is the only user-edited file - don't overwrite if exists
 # All other macro files are always updated to latest version
