@@ -152,12 +152,10 @@ class Panel(ScreenPanel):
         self.labels['y_val'].set_label(f"Y:{self.y_offset:+.2f}")
 
     def save_offsets(self, widget):
-        # Apply to runtime + saved variables
+        # Apply to runtime variables
         script = (
             f"SET_GCODE_VARIABLE MACRO=_HYDRA_CONFIG VARIABLE=offset_x_t1 VALUE={self.x_offset}\n"
             f"SET_GCODE_VARIABLE MACRO=_HYDRA_CONFIG VARIABLE=offset_y_t1 VALUE={self.y_offset}\n"
-            f"SAVE_VARIABLE VARIABLE=hydra_offset_x_t1 VALUE={self.x_offset}\n"
-            f"SAVE_VARIABLE VARIABLE=hydra_offset_y_t1 VALUE={self.y_offset}\n"
             f'RESPOND MSG="Hydra: XY offsets saved X={self.x_offset} Y={self.y_offset}"'
         )
         self._screen._ws.klippy.gcode_script(script)
