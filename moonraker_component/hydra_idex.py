@@ -195,6 +195,7 @@ def _rewrite_toolchanges(
     tool_temps: Dict[int, float] = {}  # populated from START_PRINT params
     tools_first_called: set = set()
     start_print_line: str = ""
+    skip_orphaned_params: bool = False
 
     for i, line in enumerate(lines):
         if i in tc_map:
@@ -268,7 +269,16 @@ def _rewrite_toolchanges(
                         f" ({'standby' if initial_tool != '1' else 'active'})\n"
                     )
             start_print_injected = True
+            skip_orphaned_params = True
+        elif (skip_orphaned_params
+              and re.match(
+                  r'^\s*(TOTAL_TOOLCHANGES|INITIAL_TOOL|EXTRUDER_TEMP|BED_TEMP)\s*=',
+                  line.strip(), re.IGNORECASE)):
+            # Skip orphaned START_PRINT parameter on its own line
+            # (already handled on the START_PRINT line itself)
+            pass
         else:
+            skip_orphaned_params = False
             output.append(line)
 
     # Extract temperature metadata
