@@ -432,6 +432,7 @@ def main():
     # Find the gcode file from args (-f flag)
     filepath = None
     gcodes_path = None
+    config_path = None
     args = sys.argv[1:]
 
     for i, arg in enumerate(args):
@@ -439,6 +440,9 @@ def main():
             filepath = args[i + 1]
         elif arg == '-p' and i + 1 < len(args):
             gcodes_path = args[i + 1]
+        elif arg == '-c' and i + 1 < len(args):
+            with open(args[i + 1], 'r') as f: config = json.load(f)
+            filepath, gcodes_path = config.get("filename"), config.get("gcode_dir")
 
     if filepath and gcodes_path:
         full_path = os.path.join(gcodes_path, filepath)
@@ -490,7 +494,8 @@ def main():
         spec = importlib.util.spec_from_file_location("metadata", metadata_script)
         metadata_mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(metadata_mod)
-        metadata_mod.main()
+        if 'config' not in locals(): config = {"filename": filepath, "gcode_dir": gcodes_path}
+        metadata_mod.main(config)
     else:
         print(
             f"Hydra: Could not find original metadata.py",
